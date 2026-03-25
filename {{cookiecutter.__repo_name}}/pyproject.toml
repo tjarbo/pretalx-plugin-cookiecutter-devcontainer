@@ -45,7 +45,7 @@ version = {attr = "{{cookiecutter.module_name}}.__version__"}
 include = ["pretalx*"]
 
 [tool.check-manifest]
-ignore = [".*", "tests/*", "justfile"]
+ignore = [".*", "tests/*", "justfile", ".devcontainer/**"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "pretalx.common.settings.test_settings"
