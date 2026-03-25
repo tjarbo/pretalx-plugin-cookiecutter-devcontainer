@@ -1,7 +1,7 @@
-pretalx-plugin-cookiecutter
+pretalx-plugin-cookiecutter-devcontainer
 ===========================
 
-A simple `cookiecutter`_ template to bootstrap a `pretalx`_ plugin.
+A simple `cookiecutter`_ template to bootstrap a `pretalx`_ plugin including a easy-to-use development environment using `devcontainers`_.
 
 Usage
 -----
@@ -9,7 +9,7 @@ Usage
 Let's pretend you want to create a pretalx plugin called "foobar"::
 
     $ cd <your-project-folder-parent>
-    $ uvx cookiecutter https://github.com/pretalx/pretalx-plugin-cookiecutter
+    $ uvx cookiecutter https://github.com/tjarbo/pretalx-plugin-cookiecutter-devcontainer
 
 
 You'll be prompted for some questions. Answer them, and you will find a
@@ -40,3 +40,4 @@ Voilà, there's your plugin structure! See pretalx' `documentation`_ for more in
 .. _pretalx: https://github.com/pretalx/pretalx
 .. _cookiecutter: https://github.com/audreyr/cookiecutter
 .. _documentation: https://docs.pretalx.org/developer/plugins/plugins/
+.. _devcontainers: https://code.visualstudio.com/docs/remote/containers
