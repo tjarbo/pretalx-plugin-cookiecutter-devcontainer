@@ -1,0 +1,98 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: '0 7 * * 5'  # Every Friday at 7:00 AM UTC
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote and fetch
+        run: |
+          git remote add upstream https://github.com/pretalx/pretalx-plugin-cookiecutter.git
+          git fetch upstream main
+
+      - name: Check if sync is needed
+        id: check_sync
+        run: |
+          if git diff --quiet origin/main upstream/main; then
+            echo "Branches are already in sync, nothing to do."
+            echo "needed=false" >> $GITHUB_OUTPUT
+          else
+            echo "needed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for .github changes in upstream diff
+        id: check_github
+        if: steps.check_sync.outputs.needed == 'true'
+        run: |
+          if git diff --name-only origin/main upstream/main -- '.github/' | grep -q .; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for merge conflicts
+        id: check_conflicts
+        if: steps.check_sync.outputs.needed == 'true'
+        run: |
+          if git merge --no-commit --no-ff upstream/main 2>&1; then
+            echo "has_conflicts=false" >> $GITHUB_OUTPUT
+            git reset --hard HEAD
+          else
+            echo "has_conflicts=true" >> $GITHUB_OUTPUT
+            git merge --abort
+          fi
+
+      - name: Fast-forward upstream-sync to upstream/main
+        if: steps.check_sync.outputs.needed == 'true'
+        run: |
+          git checkout -B upstream-sync upstream/main
+          git push origin upstream-sync --force
+
+      - name: Open PR if none exists
+        id: pr
+        if: steps.check_sync.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh pr list --base main --head upstream-sync --state open --json number --jq '.[0].number')
+          if [ -z "$existing" ]; then
+            pr_number=$(gh pr create \
+              --base main \
+              --head upstream-sync \
+              --title "chore: sync upstream pretalx/pretalx-plugin-cookiecutter" \
+              --body "" \
+              --reviewer tjarbo \
+              --json number \
+              --jq '.number')
+            echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+          else
+            echo "PR #$existing already exists. Branch updated."
+            echo "pr_number=$existing" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Wait for CI checks and merge
+        if: ${{ steps.check_sync.outputs.needed == 'true' && steps.check_github.outputs.changed == 'false' && steps.check_conflicts.outputs.has_conflicts == 'false' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr checks ${{ steps.pr.outputs.pr_number }} --watch --fail-fast
+          gh pr merge ${{ steps.pr.outputs.pr_number }} --merge
