@@ -75,14 +75,13 @@ jobs:
         run: |
           existing=$(gh pr list --base main --head upstream-sync --state open --json number --jq '.[0].number')
           if [ -z "$existing" ]; then
-            pr_number=$(gh pr create \
+            pr_url=$(gh pr create \
               --base main \
               --head upstream-sync \
               --title "chore: sync upstream pretalx/pretalx-plugin-cookiecutter" \
               --body "" \
-              --reviewer tjarbo \
-              --json number \
-              --jq '.number')
+              --reviewer tjarbo)
+            pr_number=$(echo "$pr_url" | grep -oP '(?<=/pull/)\d+')
             echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
           else
             echo "PR #$existing already exists. Branch updated."
