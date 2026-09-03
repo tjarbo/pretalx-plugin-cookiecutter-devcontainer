@@ -12,6 +12,10 @@ class {{ cookiecutter.__model_name }}Link(models.Model):
     def __str__(self):
         return f"{{ cookiecutter.__model_name }}Link(event={self.submission.event}, submission={self.submission})"
 
+    @classmethod
+    def for_submission(cls, submission):
+        return cls.objects.filter(submission=submission).first()
+
     @property
     def player_link(self):
         return f"https://www.{{ cookiecutter.module_name }}.com/embed/{self.video_id}"
@@ -36,4 +40,8 @@ class {{ cookiecutter.__model_name }}Settings(models.Model):
     some_setting = models.CharField(max_length=10, default="A")
 
     def __str__(self):
-        return f"{{ cookiecutter.__model_name }}Settings(event={self.event})"{% endif %}
+        return f"{{ cookiecutter.__model_name }}Settings(event={self.event})"
+
+    @classmethod
+    def for_event(cls, event):
+        return cls.objects.filter(event=event).first(){% endif %}
